@@ -88,7 +88,7 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
     
     Note: design matrix has dimension (num_samples x num_attributes)
     
-    execfile('C:\Software\eclipse_workspace\dl_project\src\dl_module.py')
+    execfile('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\\src\\dl_module.py')
     
     Parameters
     ----------
