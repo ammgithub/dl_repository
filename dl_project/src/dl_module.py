@@ -188,34 +188,6 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
     
     return trainX, testX, trainY, testY
 
-# def standardize_mnist(trX, tstX):
-#     """Standardize MNIST data: 
-#     Standardize MNIST data such that trX and tstX are normalized: 
-#     Want for each row: mean = 0, sample_std = 1. 
-#     
-#     Note: design matrix has dimension (num_samples x num_attributes)
-#    
-#     Parameters
-#     ----------
-#     trX   :  Initial samples only rescaled from [0,255] to [0,1]
-#     tstX  :  Initial samples only rescaled from [0,255] to [0,1]
-#     
-#     Examples
-#     --------
-#     trainX, testX = standardize_mnist(trX, tstX)
-#     """
-#     # Standardize training set: mean = 0, sample_std = 1
-#     m = trX.mean(axis=0, keepdims=1) # Design matrix is transposed, axis=0 not axis=1
-#     s = trX.std(axis=0, ddof=1, keepdims=1)
-#     trX = trX - m
-#     trainX = np.divide(trX, s+0.1)
-#     
-#     # Standardize test set with training mean and training sample_std
-#     tstX = tstX - m
-#     testX = np.divide(tstX, s+0.1)
-#     
-#     return trainX, testX
-
 def check_output(single_image, num_rows, num_cols):
     """Check output. 
     
