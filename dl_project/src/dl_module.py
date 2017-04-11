@@ -249,7 +249,7 @@ if __name__ == '__main__':
         assert testX[2114,:].sum() == 2.0797377929497003, \
         "All samples: check test input."
     
-    print "Done."
+    print "Finished."
         
     
     
