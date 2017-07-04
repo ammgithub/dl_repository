@@ -9,8 +9,8 @@ __version__ = 0.0
 import numpy as np
 from array import array
 from struct import unpack
-from itertools import izip as zip
-from itertools import count
+# from itertools import izip as zip
+# from itertools import count
 
 np.set_printoptions(linewidth = 100, edgeitems = 'all', suppress = True, 
                  precision = 4)
@@ -79,7 +79,7 @@ def load_mnist_labels(fname):
     
     return labels
 
-def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
+def load_mnist(binary, shuffle_flag=True, visual_flag=False):
     """Load MNIST data: 
     Loads MNIST data from directory specified in datapath. The only 
     preprocessing done at this point is a division by the max value 
@@ -92,16 +92,16 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
     
     Parameters
     ----------
-    boolean_first_two  :  boolean, decides whehter to load only zeros and ones
-    plot_flag          :  boolean, plots first and last 5 images for training
+    binary  :  boolean, decides whehter to load only zeros and ones
+    visual_flag          :  boolean, plots first and last 5 images for training
                           testing
     shuffle_flag       :  boolean, decides whehter to shuffle or not (mostly for 
                           debugging)
     
     Examples
     --------
-    trainX, testX, trainY, testY = load_mnist(boolean_first_two, shuffle_flag, plot_flag)
-    trainX, testX, trainY, testY = load_mnist(boolean_first_two)
+    trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
+    trainX, testX, trainY, testY = load_mnist(binary)
     trainX, testX, trainY, testY = load_mnist(1, True, False)
     trainX, testX, trainY, testY = load_mnist(0, True, True)
     trainX, testX, trainY, testY = load_mnist(1)
@@ -117,12 +117,16 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
     testX = load_mnist_images('\\'.join([datapath, fname_test_images]))
     testY = load_mnist_labels('\\'.join([datapath, fname_test_labels]))
     
-    if boolean_first_two:
-        # keep only labels 0 or 1: 
+    if binary:
+        
+        ###################################################
+        # binary: keep only labels 0 or 1: 
         # 12665 training samples (5923 x 0, 6742 x 1)
         # 2115 test samples (980 x 0, 1135 x 1)
-        # Group samples with 0s and 1s, needed only for debugging, see reshuffle
-        # TODO: list comprehension can probably be shortened.
+        # Group samples with 0s and 1s, needed only for debugging, 
+        # see shuffle
+        ###################################################
+        
         trX0 = np.array([trainX[i, :] for i, j in enumerate(trainY) if j == 0])
         trX1 = np.array([trainX[i, :] for i, j in enumerate(trainY) if j == 1])
         trY0 = np.array([trainY[i] for i, j in enumerate(trainY) if j == 0])
@@ -141,14 +145,14 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
         testY = np.hstack((tstY0, tstY1))
         del tstX0, tstX1, tstY0, tstY1
 
-#         # TODO: delete after testing (0s and 1s are mixed)
+#         # TODO: The below code filters 0s and 1s, but samples are mixed
 #         trainX = np.array([trainX[i, :] for i, j in enumerate(trainY) if j == 0 or j == 1])
 #         trainY = np.array([trainY[i] for i, j in enumerate(trainY) if j == 0 or j == 1])
 #         testX = np.array([testX[i, :] for i, j in enumerate(testY) if j == 0 or j == 1])
 #         testY = np.array([testY[i] for i, j in enumerate(testY) if j == 0 or j == 1])
     
     if shuffle_flag: 
-        # Reshuffle train and test set
+        # shuffle train and test set
         idx = list(np.random.permutation(len(trainY)))
         trainX = np.array([trainX[i, :] for i in idx])
         trainY = np.array([trainY[i] for i in idx])
@@ -156,26 +160,26 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
         testX = np.array([testX[i, :] for i in idx])
         testY = np.array([testY[i] for i in idx])
     
-    if plot_flag: 
+    if visual_flag: 
         print "\nPrinting FIRST 5 training images."
         for i in range(5):
-            render = check_output(trainX[i, :], 28, 28); print render
+            render = check_output(trainX[i, :]); print render
             print trainY[i]
         print "\nPrinting LAST 5 training images."
         for i in range(5):
-            render = check_output(trainX[-(i+1), :], 28, 28); print render
+            render = check_output(trainX[-(i+1), :]); print render
             print trainY[-(i+1)]
         print "\nPrinting FIRST 5 test images."
         for i in range(5):
-            render = check_output(testX[i, :], 28, 28); print render
+            render = check_output(testX[i, :]); print render
             print testY[i]
         print "\nPrinting LAST 5 test images."
         for i in range(5):
-            render = check_output(testX[-(i+1), :], 28, 28); print render
+            render = check_output(testX[-(i+1), :]); print render
             print testY[-(i+1)]
-        
+    
     # Standardize training set: mean = 0, sample_std = 1
-    m = trainX.mean(axis=0, keepdims=1) # Design matrix is transposed, axis=0 not axis=1
+    m = trainX.mean(axis=0, keepdims=1) # Design matrix transposed, axis=0 not axis=1
     s = trainX.std(axis=0, ddof=1, keepdims=1)
     trX = trainX - m
     del trainX
@@ -185,11 +189,16 @@ def load_mnist(boolean_first_two, shuffle_flag=True, plot_flag=False):
     tstX = testX - m
     del testX
     testX = np.divide(tstX, s+0.1)
-    
     return trainX, testX, trainY, testY
 
-def check_output(single_image, num_rows, num_cols):
+def check_output(single_image):
     """Check output. 
+    Note: design matrix has dimension (num_samples x num_attributes)
+        
+    Assume we always have:
+    ----------------------
+    num_rows = 28
+    num_cols = 28
     
     Parameters
     ----------
@@ -199,56 +208,136 @@ def check_output(single_image, num_rows, num_cols):
     
     Examples
     --------
-    render = check_output(single_image, num_rows, num_cols)
-    render = check_output(single_image, 28, 28)
-    render = check_output(trX[0, :], 28, 28); print render
+    render = check_output(single_image)
+    render = check_output(trX[0, :]); print render
     for i in range(20):
-    render = check_output(trX[i, :], 28, 28); print render
-    print trY[i]
-    
+        render = check_output(trX[i, :]); print render
     """
+    num_rows = 28
+    num_cols = 28
     assert single_image.ndim == 1, "Check only single sample trainX or testX."
     a = np.reshape(single_image, (num_rows, num_cols), 'F')
     single_image = np.reshape(a, (1, num_rows*num_cols)).flatten()
     render = ''
     for i in range(len(single_image)):
         if i % num_cols == 0: render += '\n'
+        # display_threshold = 1 => skinny display
+        # display_threshold = 254 => fat display
+        display_threshold = 10
         # input data is rescaled to interval [0, 1]
-        if 255*single_image[i] > 10:
+        if 255*single_image[i] > display_threshold:
             render += 'X'
         else:
             render += '.'
     return render
+
+def logistic_regression(trainX, trainY):
+    """Compute logistic regression: 
+    
+    My data for m = 3 samples and n = 2 attributes:  
+    
+             | x11 x12 |    | x1 |                      | y1 | 
+    trainX = | x21 x22 | =  | x2 |             trainY = | y2 |
+             | x31 x32 |    | x3 |                      | y3 |
+    
+                           1
+    h(xi) =  -------------------------------
+             1 + exp(-Theta1*xi1-Theta2*xi2)
+    
+           m
+    J = - sum ( yi*log(h(xi)) + (1-yi)*log(1-h(xi)) )
+          i=1
+
+    Parameters
+    ----------
+    In    : theta, trainX, trainY
+    Out   : J
+
+    Examples
+    --------
+    fval, grad = logistic_regression(trainX, trainY)
+    """
+    trainX = np.hstack((trainX, np.ones((trainX.shape[0], 1))))
+    m = trainX.shape[0] # samples=12665
+    n = trainX.shape[1] # attributes=785
+    # Initialize
+    theta = 0.001*np.random.uniform(0, 1, (n, 1)).flatten()
+    fval = 0.0
+    for i in range(m):
+        h = 1. / (1. + np.exp(-np.inner(theta, trainX[i, :])))
+        # TODO: np.log(1-h) can lead to problems for h ~= 1
+        fval += int(trainY[i]) * np.log(h) + (1 - int(trainY[i])) * np.log(1 - h)
+    
+    grad = 0.0
+    return fval, grad
+    
     
 if __name__ == '__main__':
-    print "Running..."
-    # Select only 0s and 1s
-    boolean_first_two = 0
-    shuffle_flag = True
-    plot_flag = True
+    """
+    execfile('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src\\dl_module.py')
+    """
+    # Avoid Memory error
+    if globals().has_key('trainX'): del trainX, testX, trainY, testY
     
-    trainX, testX, trainY, testY = load_mnist(boolean_first_two, shuffle_flag, plot_flag)
-    
-    # When shuffle is off: testing first and last sample
-    if not(shuffle_flag) and boolean_first_two:
-        assert trainX[0,:].sum() == 39.561047980868921, \
-        "Zeros and ones only: check training input."
-        assert trainX[12664,:].sum() == -120.36191028696315, \
-        "Zeros and ones only: check training input."
-        assert testX[0,:].sum() == 88.945449293439594, \
-        "Zeros and ones only: check test input."
-        assert testX[2114,:].sum() == -66.791473643172466, \
-        "Zeros and ones only: check test input."
-    elif not(shuffle_flag) and not(boolean_first_two):
-        assert trainX[0,:].sum() == 19.28293399623935, \
-        "All samples: check training input."
-        assert trainX[12664,:].sum() == -144.33543748893206, \
-        "All samples: check training input."
-        assert testX[0,:].sum() == -60.315061997267819, \
-        "All samples: check test input."
-        assert testX[2114,:].sum() == 2.0797377929497003, \
-        "All samples: check test input."
-    
+    print "\n"
+    print 60 * '-'
+    print 18 * ' ' + " Deep Learning Exercises "
+    print 60 * '-'
+    print "(1) Load MNIST data only."
+    print "(2) Test logistic regression on binary data."
+    print 60 * '-'
+
+    invalid_input = True
+    while invalid_input:
+        try:
+            user_in = int(raw_input("Make selection (1)-(2): "))
+            invalid_input = False
+        except ValueError as e:
+            print "%s is not a valid selection. Please try again. "\
+            %e.args[0].split(':')[1]
+
+    if user_in == 1:
+        print "(1) Loading MNIST data..."\
+        # Select only 0s and 1s
+        binary = 1
+        # Shuffle data
+        shuffle_flag = False
+        #########################################################
+        # visual_flag prints a visual render for: 
+        # the FIRST 5 training images.
+        # the LAST 5 training images.
+        # the FIRST 5 test images.
+        # the LAST 5 test images.
+        #########################################################
+        visual_flag = True
+        trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
+        # Test first and last sample, if no shuffling is done.
+        if not(shuffle_flag) and binary:
+            assert trainX[0,:].sum() == 39.561047980868921, \
+            "Zeros and ones only: check training input."
+            assert trainX[12664,:].sum() == -120.36191028696315, \
+            "Zeros and ones only: check training input."
+            assert testX[0,:].sum() == 88.945449293439594, \
+            "Zeros and ones only: check test input."
+            assert testX[2114,:].sum() == -66.791473643172466, \
+            "Zeros and ones only: check test input."
+        elif not(shuffle_flag) and not(binary):
+            assert trainX[0,:].sum() == 19.28293399623935, \
+            "All samples: check training input."
+            assert trainX[12664,:].sum() == -144.33543748893206, \
+            "All samples: check training input."
+            assert testX[0,:].sum() == -60.315061997267819, \
+            "All samples: check test input."
+            assert testX[2114,:].sum() == 2.0797377929497003, \
+            "All samples: check test input."
+    elif user_in == 2:
+        print "(2) Testing logistic regression on binary data..."
+        binary = 1
+        shuffle_flag = False
+        visual_flag = False
+        trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
+    else:
+        print "Invalid selection. Program terminating. "
     print "Finished."
         
     
