@@ -10,6 +10,8 @@ import numpy as np
 from scipy.optimize import minimize, check_grad
 from struct import unpack
 from array import array
+from time import time
+import warnings
 
 np.set_printoptions(linewidth = 100, edgeitems = 'all', suppress = True, 
                  precision = 4)
@@ -277,62 +279,34 @@ def logistic_regression(theta, trainX, trainY):
     grad = np.dot(trainX.T, error).flatten()
     return fval, grad
 
-def logistic_regression_grad(theta, trainX, trainY):
-    """Compute logistic regression gradient: 
-     
-    Parameters
-    ----------
-    In    : theta, trainX, trainY
-    Out   : grad
- 
+def get_binary_accuracy(theta, X, Y):
+    """Compute the accuracy. X and Y can be either training data (trainX, trainY)
+    or test data (testX, testY).  
+    
+    In    : theta, trainX, trainY or theta, testX, testY
+    Out   : accuracy
+
     Examples
     --------
-    grad = logistic_regression_grad(theta, trainX, trainY)
+    accuracy = get_binary_accuracy(theta, X, Y)
     """
-    # Add column of ones for bias
-    trainX = np.hstack((trainX, np.ones((trainX.shape[0], 1))))
-    m = trainX.shape[0] # samples=12665
-    assert len(theta) == trainX.shape[1], "Make sure theta accounts for bias."
-    h = 1. / (1. + np.exp(-np.inner(theta0, trainX)))
-    error = h - trainY.flatten()
-    return np.dot(trainX.T, error)
-
+    res_bool = sigmoid(np.sign(np.dot(np.hstack((np.ones((X.shape[0], 1)), \
+                                                  X)), theta))) > 0.5
+    # multiplication by 1 converts True/False to 1/0, conversion int to float
+    return sum((Y == res_bool*1)*1) / float(len(Y))
+    
 def my_check_grad(grad1, grad2):
     return np.sqrt(np.sum((grad1-grad2)**2))
 
 def sigmoid(x): 
     """
+    Computes: 1. / (1 + np.exp(-x))
     Examples
     --------
     sig = sigmoid(x)
     """
-    return 1.0 / (1.0 + np.exp(-x))
-
-
-# def logreg_theta():
-#     """Find optimal theta: 
-#     
-#     Parameters
-#     ----------
-#     In    : theta_init
-#     Out   : theta
-# 
-#     Examples
-#     --------
-#     theta = logreg_theta(theta_init)
-#     """
-#     theta0 = 0.001*np.random.uniform(0, 1, (n, 1)).flatten()
-#     
-#     # Use fval only
-#     theta = minimize(logistic_regression_fval, x0, method='nelder-mead', \
-#                    options={'xtol': 1e-8, 'disp': True})
-#     
-#     # Use fval and gradient
-# #     res = minimize(logistic_regression_fval, x0, method='BFGS', \
-# #                    jac=logistic_regression_grad, options={'disp': True})
-#     
-#     return theta
-    
+    if isinstance(x, list): x = np.array(x)
+    return 1.0 / (1.0 + np.exp(-x))    
     
 if __name__ == '__main__':
     """
@@ -400,15 +374,14 @@ if __name__ == '__main__':
         visual_flag = False
         trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
 
-        # 100 samples / 50 features
-#         trainX = trainX[:100, :50]
-#         testX = testX[:100, :50]
-#         trainY = trainY[:100]
-#         testY = testY[:100]
-
         theta0 = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, 1)).flatten()
-#         theta0 = 0.001*np.ones((trainX.shape[1]+1, 1)).flatten()
         
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', r'overflow encountered in exp')
+            warnings.filterwarnings('ignore', r'divide by zero encountered in log')
+            warnings.filterwarnings('ignore', r'invalid value encountered in multiply')
+
+        tstart = time()
         res = minimize(logistic_regression, theta0, args = (trainX, trainY), \
                         method='SLSQP', jac = True, options={'disp': True})
         
@@ -417,6 +390,17 @@ if __name__ == '__main__':
         theta = res.x
         fvalopt = res.fun
         gradopt = res.jac
+        accuracy_train = get_binary_accuracy(theta, trainX, trainY)
+        accuracy_test = get_binary_accuracy(theta, testX, testY)
+        
+        print "Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
+        print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
+        print "Elapsed time: %d Seconds"%(time()-tstart)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('default', r'overflow encountered in exp')
+            warnings.filterwarnings('default', r'divide by zero encountered in log')
+            warnings.filterwarnings('default', r'invalid value encountered in multiply')
         
 #         # test grad1 and grad2
 #         theta_grad = 0.001*np.random.uniform(0, 1, (51, 10))
