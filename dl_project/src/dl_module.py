@@ -7,10 +7,9 @@ __date__  = "March 31, 2017"
 __version__ = 0.0
 
 import numpy as np
-from array import array
+from scipy.optimize import minimize, check_grad
 from struct import unpack
-# from itertools import izip as zip
-# from itertools import count
+from array import array
 
 np.set_printoptions(linewidth = 100, edgeitems = 'all', suppress = True, 
                  precision = 4)
@@ -127,6 +126,7 @@ def load_mnist(binary, shuffle_flag=True, visual_flag=False):
         # see shuffle
         ###################################################
         
+        # Default is sorted. TODO: sorting can be removed later
         trX0 = np.array([trainX[i, :] for i, j in enumerate(trainY) if j == 0])
         trX1 = np.array([trainX[i, :] for i, j in enumerate(trainY) if j == 1])
         trY0 = np.array([trainY[i] for i, j in enumerate(trainY) if j == 0])
@@ -231,8 +231,9 @@ def check_output(single_image):
             render += '.'
     return render
 
-def logistic_regression(trainX, trainY):
-    """Compute logistic regression: 
+def logistic_regression(theta, trainX, trainY):
+    """Compute logistic regression function values. Column of ones is added
+    to account for bias. 
     
     My data for m = 3 samples and n = 2 attributes:  
     
@@ -247,34 +248,96 @@ def logistic_regression(trainX, trainY):
            m
     J = - sum ( yi*log(h(xi)) + (1-yi)*log(1-h(xi)) )
           i=1
+          
+    maximize    sum ( y(i)*log(h) + (1-y(i))*log(1-h) )
+    minimize   -sum ( y(i)*log(h) + (1-y(i))*log(1-h) )
 
     Parameters
     ----------
     In    : theta, trainX, trainY
-    Out   : J
+    Out   : fval, grad
 
     Examples
     --------
-    fval, grad = logistic_regression(trainX, trainY)
+    fval, grad = logistic_regression(theta, trainX, trainY)
     """
-    trainX = np.hstack((trainX, np.ones((trainX.shape[0], 1))))
-    m = trainX.shape[0] # samples=12665
-    n = trainX.shape[1] # attributes=785
+    # Add column of ones for bias
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    num_samples = trainX.shape[0] # samples=12665
     # Initialize
-    theta = 0.001*np.random.uniform(0, 1, (n, 1)).flatten()
     fval = 0.0
-    for i in range(m):
+    error = np.zeros((num_samples, 1))
+    for i in range(num_samples):
         h = 1. / (1. + np.exp(-np.inner(theta, trainX[i, :])))
         # TODO: np.log(1-h) can lead to problems for h ~= 1
-        fval += int(trainY[i]) * np.log(h) + (1 - int(trainY[i])) * np.log(1 - h)
-    
-    grad = 0.0
+        fval -= ( trainY[i]*np.log(h) + (1-trainY[i])*np.log(1-h) )
+        error[i] = h - trainY[i]
+    # This is the negative gradient for a minimization
+    # Must be flattened for np.minimize
+    grad = np.dot(trainX.T, error).flatten()
     return fval, grad
+
+def logistic_regression_grad(theta, trainX, trainY):
+    """Compute logistic regression gradient: 
+     
+    Parameters
+    ----------
+    In    : theta, trainX, trainY
+    Out   : grad
+ 
+    Examples
+    --------
+    grad = logistic_regression_grad(theta, trainX, trainY)
+    """
+    # Add column of ones for bias
+    trainX = np.hstack((trainX, np.ones((trainX.shape[0], 1))))
+    m = trainX.shape[0] # samples=12665
+    assert len(theta) == trainX.shape[1], "Make sure theta accounts for bias."
+    h = 1. / (1. + np.exp(-np.inner(theta0, trainX)))
+    error = h - trainY.flatten()
+    return np.dot(trainX.T, error)
+
+def my_check_grad(grad1, grad2):
+    return np.sqrt(np.sum((grad1-grad2)**2))
+
+def sigmoid(x): 
+    """
+    Examples
+    --------
+    sig = sigmoid(x)
+    """
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+# def logreg_theta():
+#     """Find optimal theta: 
+#     
+#     Parameters
+#     ----------
+#     In    : theta_init
+#     Out   : theta
+# 
+#     Examples
+#     --------
+#     theta = logreg_theta(theta_init)
+#     """
+#     theta0 = 0.001*np.random.uniform(0, 1, (n, 1)).flatten()
+#     
+#     # Use fval only
+#     theta = minimize(logistic_regression_fval, x0, method='nelder-mead', \
+#                    options={'xtol': 1e-8, 'disp': True})
+#     
+#     # Use fval and gradient
+# #     res = minimize(logistic_regression_fval, x0, method='BFGS', \
+# #                    jac=logistic_regression_grad, options={'disp': True})
+#     
+#     return theta
     
     
 if __name__ == '__main__':
     """
     execfile('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src\\dl_module.py')
+    
     """
     # Avoid Memory error
     if globals().has_key('trainX'): del trainX, testX, trainY, testY
@@ -301,7 +364,7 @@ if __name__ == '__main__':
         # Select only 0s and 1s
         binary = 1
         # Shuffle data
-        shuffle_flag = False
+        shuffle_flag = True
         #########################################################
         # visual_flag prints a visual render for: 
         # the FIRST 5 training images.
@@ -333,9 +396,34 @@ if __name__ == '__main__':
     elif user_in == 2:
         print "(2) Testing logistic regression on binary data..."
         binary = 1
-        shuffle_flag = False
+        shuffle_flag = True
         visual_flag = False
         trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
+
+        # 100 samples / 50 features
+#         trainX = trainX[:100, :50]
+#         testX = testX[:100, :50]
+#         trainY = trainY[:100]
+#         testY = testY[:100]
+
+        theta0 = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, 1)).flatten()
+#         theta0 = 0.001*np.ones((trainX.shape[1]+1, 1)).flatten()
+        
+        res = minimize(logistic_regression, theta0, args = (trainX, trainY), \
+                        method='SLSQP', jac = True, options={'disp': True})
+        
+        print "Optimization successful? %s"%res.success
+        print "Optimization status: %d"%res.status
+        theta = res.x
+        fvalopt = res.fun
+        gradopt = res.jac
+        
+#         # test grad1 and grad2
+#         theta_grad = 0.001*np.random.uniform(0, 1, (51, 10))
+#         for i in range(10):
+#             fval, grad1 = logistic_regression(theta_grad[:, i], trainX, trainY)
+#             grad2 = logistic_regression_grad(theta_grad[:, i], trainX, trainY)
+#             print i, my_check_grad(grad1, grad2)
     else:
         print "Invalid selection. Program terminating. "
     print "Finished."
