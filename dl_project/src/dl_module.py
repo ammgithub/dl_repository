@@ -7,7 +7,7 @@ __date__  = "March 31, 2017"
 __version__ = 0.0
 
 import numpy as np
-from scipy.optimize import minimize, check_grad
+from scipy.optimize import minimize, check_grad, show_options
 from struct import unpack
 from array import array
 from time import time
@@ -270,12 +270,36 @@ def logistic_regression(theta, trainX, trainY):
     fval = 0.0
     error = np.zeros((num_samples, 1))
     for i in range(num_samples):
-        h = 1. / (1. + np.exp(-np.inner(theta, trainX[i, :])))
-        # TODO: np.log(1-h) can lead to problems for h ~= 1
+        h = sigmoid(np.inner(theta, trainX[i, :]))
+        # np.log(1-h) can lead to problems for h = 1.0
+        h = np.where(h == 1.0, 1-1e-12, h)
         fval -= ( trainY[i]*np.log(h) + (1-trainY[i])*np.log(1-h) )
         error[i] = h - trainY[i]
-    # This is the negative gradient for a minimization
-    # Must be flattened for np.minimize
+    # Negative gradient for a minimization, must be flattened for np.minimize
+    grad = np.dot(trainX.T, error).flatten()
+    return fval, grad
+
+def logistic_regression_vec(theta, trainX, trainY):
+    """Compute logistic regression function values. Same as logistic_regression, 
+    but vectorized.  
+    
+    Parameters
+    ----------
+    In    : theta, trainX, trainY
+    Out   : fval, grad
+
+    Examples
+    --------
+    fval, grad = logistic_regression_vec(theta, trainX, trainY)
+    """
+    # Add column of ones for bias
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    h = sigmoid(np.inner(trainX, theta))
+    # np.log(1-h) can lead to problems for h = 1.0
+    h = np.where(h == 1.0, 1-1e-12, h)
+    fval = -( trainY * np.log(h) + (1 - trainY) * np.log(1-h) ).sum()
+    error = h - trainY
+    # Negative gradient for a minimization, must be flattened for np.minimize
     grad = np.dot(trainX.T, error).flatten()
     return fval, grad
 
@@ -306,12 +330,12 @@ def sigmoid(x):
     sig = sigmoid(x)
     """
     if isinstance(x, list): x = np.array(x)
-    return 1.0 / (1.0 + np.exp(-x))    
-    
+    return 1.0 / (1.0 + np.exp(-x))  
+
 if __name__ == '__main__':
     """
     execfile('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src\\dl_module.py')
-    
+    show_options('minimize', 'SLSQP', True)
     """
     # Avoid Memory error
     if globals().has_key('trainX'): del trainX, testX, trainY, testY
@@ -320,8 +344,8 @@ if __name__ == '__main__':
     print 60 * '-'
     print 18 * ' ' + " Deep Learning Exercises "
     print 60 * '-'
-    print "(1) Load MNIST data only."
-    print "(2) Test logistic regression on binary data."
+    print "(1) Load MNIST data only (0, 1, ..., 9)."
+    print "(2) Run logistic regression on binary data (0, 1)."
     print 60 * '-'
 
     invalid_input = True
@@ -368,7 +392,7 @@ if __name__ == '__main__':
             assert testX[2114,:].sum() == 2.0797377929497003, \
             "All samples: check test input."
     elif user_in == 2:
-        print "(2) Testing logistic regression on binary data..."
+        print "(2) Running logistic regression on binary data (0, 1)..."
         binary = 1
         shuffle_flag = True
         visual_flag = False
@@ -383,7 +407,7 @@ if __name__ == '__main__':
 
         tstart = time()
         res = minimize(logistic_regression, theta0, args = (trainX, trainY), \
-                        method='SLSQP', jac = True, options={'disp': True})
+                        method='cg', jac = True, options={'disp': True})
         
         print "Optimization successful? %s"%res.success
         print "Optimization status: %d"%res.status
@@ -395,7 +419,7 @@ if __name__ == '__main__':
         
         print "Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
         print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
-        print "Elapsed time: %d Seconds"%(time()-tstart)
+        print "Elapsed time: %3.1f Seconds"%(time()-tstart)
 
         with warnings.catch_warnings():
             warnings.filterwarnings('default', r'overflow encountered in exp')
