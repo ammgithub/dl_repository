@@ -392,7 +392,7 @@ if __name__ == '__main__':
             assert testX[2114,:].sum() == 2.0797377929497003, \
             "All samples: check test input."
     elif user_in == 2:
-        print "(2) Running logistic regression on binary data (0, 1)..."
+        print "(2) Running logistic regression on binary data (0, 1)...\n"
         binary = 1
         shuffle_flag = True
         visual_flag = False
@@ -400,13 +400,9 @@ if __name__ == '__main__':
 
         theta0 = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, 1)).flatten()
         
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', r'overflow encountered in exp')
-            warnings.filterwarnings('ignore', r'divide by zero encountered in log')
-            warnings.filterwarnings('ignore', r'invalid value encountered in multiply')
-
         tstart = time()
-        res = minimize(logistic_regression, theta0, args = (trainX, trainY), \
+        # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
+        res = minimize(logistic_regression_vec, theta0, args = (trainX, trainY), \
                         method='cg', jac = True, options={'disp': True})
         
         print "Optimization successful? %s"%res.success
@@ -421,11 +417,6 @@ if __name__ == '__main__':
         print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
         print "Elapsed time: %3.1f Seconds"%(time()-tstart)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('default', r'overflow encountered in exp')
-            warnings.filterwarnings('default', r'divide by zero encountered in log')
-            warnings.filterwarnings('default', r'invalid value encountered in multiply')
-        
 #         # test grad1 and grad2
 #         theta_grad = 0.001*np.random.uniform(0, 1, (51, 10))
 #         for i in range(10):
