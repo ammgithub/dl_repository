@@ -319,9 +319,6 @@ def get_binary_accuracy(theta, X, Y):
     # multiplication by 1 converts True/False to 1/0, conversion int to float
     return sum((Y == res_bool*1)*1) / float(len(Y))
     
-def my_check_grad(grad1, grad2):
-    return np.sqrt(np.sum((grad1-grad2)**2))
-
 def sigmoid(x): 
     """
     Computes: 1. / (1 + np.exp(-x))
@@ -360,7 +357,7 @@ if __name__ == '__main__':
     if user_in == 1:
         print "(1) Loading MNIST data..."\
         # Select only 0s and 1s
-        binary = 1
+        binary = 0
         # Shuffle data
         shuffle_flag = True
         #########################################################
@@ -416,13 +413,6 @@ if __name__ == '__main__':
         print "Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
         print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
         print "Elapsed time: %3.1f Seconds"%(time()-tstart)
-
-#         # test grad1 and grad2
-#         theta_grad = 0.001*np.random.uniform(0, 1, (51, 10))
-#         for i in range(10):
-#             fval, grad1 = logistic_regression(theta_grad[:, i], trainX, trainY)
-#             grad2 = logistic_regression_grad(theta_grad[:, i], trainX, trainY)
-#             print i, my_check_grad(grad1, grad2)
     else:
         print "Invalid selection. Program terminating. "
     print "Finished."
