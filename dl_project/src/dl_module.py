@@ -2,6 +2,7 @@
 Created on March 31, 2017
 
 """
+#@PydevCodeAnalysisIgnore
 __author__ = 'amm'
 __date__  = "March 31, 2017"
 __version__ = 0.0
@@ -11,7 +12,7 @@ from scipy.optimize import minimize, check_grad, show_options
 from struct import unpack
 from array import array
 from time import time
-import warnings
+# import warnings
 
 np.set_printoptions(linewidth = 100, edgeitems = 'all', suppress = True, 
                  precision = 4)
@@ -329,11 +330,52 @@ def sigmoid(x):
     if isinstance(x, list): x = np.array(x)
     return 1.0 / (1.0 + np.exp(-x))  
 
+def logistic_regression_vec_fun(theta, trainX, trainY):
+    """For gradient check: compute logistic regression function values ONLY. 
+    For more information see 'logistic_regression_vec'. 
+    
+    Parameters
+    ----------
+    In    : theta, trainX, trainY
+    Out   : fval_only
+
+    Examples
+    --------
+    fval_only = logistic_regression_vec(theta, trainX, trainY)
+    """
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    h = sigmoid(np.inner(trainX, theta))
+    h = np.where(h == 1.0, 1-1e-12, h)
+    fval_only = -( trainY * np.log(h) + (1 - trainY) * np.log(1-h) ).sum()
+    return fval_only
+
+def logistic_regression_vec_gradient(theta, trainX, trainY):
+    """For gradient check: compute logistic regression gradient ONLY. 
+    For more information see 'logistic_regression_vec'. 
+    
+    Parameters
+    ----------
+    In    : theta, trainX, trainY
+    Out   : grad_only
+    
+    Examples
+    --------
+    grad_only = logistic_regression_vec_gradient(theta, trainX, trainY)
+    """
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    h = sigmoid(np.inner(trainX, theta))
+    h = np.where(h == 1.0, 1-1e-12, h)
+    error = h - trainY
+    grad_only = np.dot(trainX.T, error).flatten()
+    return grad_only
+
 if __name__ == '__main__':
     """
-    execfile('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src\\dl_module.py')
+    execfile('dl_module.py')
     show_options('minimize', 'SLSQP', True)
     """
+    import os
+    os.chdir('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src')
     # Avoid Memory error
     if globals().has_key('trainX'): del trainX, testX, trainY, testY
     
@@ -397,6 +439,13 @@ if __name__ == '__main__':
 
         theta0 = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, 1)).flatten()
         
+        print "Checking gradient for theta0, a vector of length %d ..." \
+                % theta0.shape[0]
+        check_gradient = check_grad(logistic_regression_vec_fun, \
+                                    logistic_regression_vec_gradient, \
+                                    theta0, trainX, trainY)
+        print "Grad Check (should be small) : %3.6f" % check_gradient
+        print "Proceeding to optimization ...\n"
         tstart = time()
         # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
         res = minimize(logistic_regression_vec, theta0, args = (trainX, trainY), \
