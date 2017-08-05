@@ -2,7 +2,6 @@
 Created on March 31, 2017
 
 """
-#@PydevCodeAnalysisIgnore
 __author__ = 'amm'
 __date__  = "March 31, 2017"
 __version__ = 0.0
@@ -229,14 +228,14 @@ def check_output(single_image):
         display_threshold = 10
         # input data is rescaled to interval [0, 1]
         if 255*single_image[i] > display_threshold:
-            render += 'X'
-        else:
             render += '.'
+        else:
+            render += 'M'
     return render
 
 def logistic_regression(theta, trainX, trainY):
-    """Compute logistic regression function values. Column of ones is added
-    to account for bias. 
+    """Compute logistic regression function values and gradient.  
+    Column of ones is added to account for bias. 
     
     My data for m = 3 samples and n = 2 attributes:  
     
@@ -281,8 +280,8 @@ def logistic_regression(theta, trainX, trainY):
     return fval, grad
 
 def logistic_regression_vec(theta, trainX, trainY):
-    """Compute logistic regression function values. Same as logistic_regression, 
-    but vectorized.  
+    """Compute logistic regression function values and gradient. 
+    Same as logistic_regression, but vectorized.  
     
     Parameters
     ----------
@@ -369,6 +368,214 @@ def logistic_regression_vec_gradient(theta, trainX, trainY):
     grad_only = np.dot(trainX.T, error).flatten()
     return grad_only
 
+def softmax_regression(theta, trainX, trainY):
+    """Compute softmax regression function values. Similar to 
+    logistic regression a column of ones is added to account for bias. 
+    
+    softmax regression has one redundant class, need to analyze 
+    only num_classes - 1. 
+    
+    My data for m = 5 samples, n = 2 attributes, and k = 3 classes:  
+    
+             | x11 x11 |    | x1 |                      | y1 |   | 3 |  
+             | x21 x21 |    | x2 |                      | y2 |   | 1 |
+    trainX = | x31 x31 | =  | x3 |             trainY = | y3 | = | 2 |
+             | x41 x41 |    | x4 |                      | y4 |   | 2 |
+             | x51 x51 |    | x5 |                      | y5 |   | 3 |
+    
+    My data for m = 5 samples and k = 3 classes:  
+
+                | th11 th12 th13 |
+                | th21 th22 th23 |
+    theta_mat = | th31 th32 th33 |
+                | th41 th42 th43 |
+                | th51 th52 th53 |
+    
+    maximize    sum ( y(i)*log(h) + (1-y(i))*log(1-h) )
+    minimize   -sum ( y(i)*log(h) + (1-y(i))*log(1-h) )
+    
+                 m   k
+    minimize   -sum sum ( ( (yi==j) * log( p(yi=j) ) ) )
+                i=1 j=1
+
+    Parameters
+    ----------
+    In    : theta (concatenated to vector for 9 classes), trainX, trainY
+    Out   : fval, grad
+
+    Examples
+    --------
+    fval, grad = softmax_regression(theta, trainX, trainY)
+    """
+    # Add column of ones for bias, trainX is skinny
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    num_samples = trainX.shape[0] # samples = 60000
+    num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
+    num_classes = int(theta.size / float(num_attributes) + 1); # 10
+    # theta_mat is skinny
+    theta_mat = vec_to_mat(theta, num_attributes, num_classes-1) # 785 x 9
+    
+    # Initialize
+    fval = 0.0
+    error = np.zeros((num_samples, num_classes-1))
+    for i in range(num_samples):
+        denom = 0.0
+        for j in range(num_classes-1):
+            denom = denom + np.exp(np.inner(theta_mat[:, j], trainX[i, :]))
+        for j in range(num_classes-1):
+            error[i, j] = 1*(trainY[i]==j) - \
+                np.exp(np.inner(theta_mat[:, j], trainX[i, :])) / denom
+            p = np.exp(np.inner(theta_mat[:, j], trainX[i, :])) / denom
+            fval -= ( 1*(trainY[i]==j) * np.log(p) )
+    grad_mat = np.dot(trainX.T, error)
+    # Negative gradient for a minimization, must be flattened for np.minimize
+    grad = mat_to_vec(grad_mat).flatten()
+#     grad = np.dot(trainX.T, error).flatten()
+    return fval, grad
+
+def softmax_regression_vec(theta, trainX, trainY):
+    """Compute softmax regression function values. 
+    Same as softmax_regression, but vectorized.  
+    
+    Parameters
+    ----------
+    In    : theta (concatenated to vector for 9 classes), trainX, trainY
+    Out   : fval, grad
+    
+    Examples
+    --------
+    fval, grad = softmax_regression_vec(theta, trainX, trainY)
+    """
+    # Add column of ones for bias, trainX is skinny
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+#     num_samples = trainX.shape[0] # samples = 60000
+    num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
+    num_classes = int(theta.size / float(num_attributes) + 1); # 10
+    # theta_mat is skinny
+    theta_mat = vec_to_mat(theta, num_attributes, num_classes-1) # 785 x 9
+    
+    # A is skinny (num_samples x num_classes-1) = (60000, 9)
+    A = np.inner(theta_mat.T, trainX).T
+    B = np.exp(A)
+    # denom = B.sum(axis=1), replicate column (num_samples x num_classes)
+    denom = np.array([list(B.sum(axis=1)),]*(num_classes-1)).transpose()
+    # probabilities (num_samples x num_classes-1)
+    P = B / denom
+
+    # 0-1 array num_samples x num_classes-1
+    mask = np.zeros((trainY.shape[0], num_classes-1))
+    for j in range(num_classes-1):
+        mask[:, j] = 1*(trainY == j)
+        
+    # Objective function 
+    sum_over_classes = (mask * np.log(P)).sum(axis=1) # (num_samples x 1) flattened
+    fval = -sum_over_classes.sum(axis=0) # sum over all samples m
+    
+    # Gradient
+    error = mask - P
+    grad_mat = np.dot(trainX.T, error)
+    # Negative gradient for a minimization, must be flattened for np.minimize
+    grad = mat_to_vec(grad_mat).flatten()
+    return fval, grad
+
+def softmax_regression_vec_fun(theta, trainX, trainY):
+    """Compute softmax regression function values, fval ONLY. 
+    
+    Parameters
+    ----------
+    In    : theta (concatenated to vector for 9 classes), trainX, trainY
+    Out   : fval
+    
+    Examples
+    --------
+    fval = softmax_regression_vec(theta, trainX, trainY)
+    """
+    # Add column of ones for bias, trainX is skinny
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
+    num_classes = int(theta.size / float(num_attributes) + 1); # 10
+    # theta_mat is skinny
+    theta_mat = vec_to_mat(theta, num_attributes, num_classes-1) # 785 x 9
+    
+    # A is skinny (num_samples x num_classes-1) = (60000, 9)
+    A = np.inner(theta_mat.T, trainX).T
+    B = np.exp(A)
+    # denom = B.sum(axis=1), replicate column (num_samples x num_classes)
+    denom = np.array([list(B.sum(axis=1)),]*(num_classes-1)).transpose()
+    # probabilities (num_samples x num_classes-1)
+    P = B / denom
+
+    # 0-1 array num_samples x num_classes-1
+    mask = np.zeros((trainY.shape[0], num_classes-1))
+    for j in range(num_classes-1):
+        mask[:, j] = 1*(trainY == j)
+        
+    # Objective function 
+    sum_over_classes = (mask * np.log(P)).sum(axis=1) # (num_samples x 1) flattened
+    fval = -sum_over_classes.sum(axis=0) # sum over all samples m
+    
+    return fval
+
+def softmax_regression_vec_gradient(theta, trainX, trainY):
+    """Compute softmax regression function values, gradient ONLY. 
+    
+    Parameters
+    ----------
+    In    : theta (concatenated to vector for 9 classes), trainX, trainY
+    Out   : grad
+    
+    Examples
+    --------
+    grad = softmax_regression_vec(theta, trainX, trainY)
+    """
+    # Add column of ones for bias, trainX is skinny
+    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+#     num_samples = trainX.shape[0] # samples = 60000
+    num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
+    num_classes = int(theta.size / float(num_attributes) + 1); # 10
+    # theta_mat is skinny
+    theta_mat = vec_to_mat(theta, num_attributes, num_classes-1) # 785 x 9
+    
+    # A is skinny (num_samples x num_classes-1) = (60000, 9)
+    A = np.inner(theta_mat.T, trainX).T
+    B = np.exp(A)
+    # denom = B.sum(axis=1), replicate column (num_samples x num_classes)
+    denom = np.array([list(B.sum(axis=1)),]*(num_classes-1)).transpose()
+    # probabilities (num_samples x num_classes-1)
+    P = B / denom
+
+    # 0-1 array num_samples x num_classes-1
+    mask = np.zeros((trainY.shape[0], num_classes-1))
+    for j in range(num_classes-1):
+        mask[:, j] = 1*(trainY == j)
+        
+    # Gradient
+    error = mask - P
+    grad_mat = np.dot(trainX.T, error)
+    # Negative gradient for a minimization, must be flattened for np.minimize
+    grad = mat_to_vec(grad_mat).flatten()
+    return grad
+
+def mat_to_vec(amat):
+    """
+    Convert matrix to vector (column-wise)
+    
+    Examples
+    --------
+    a = mat_to_vec(amat)
+    """
+    return amat.T.reshape(amat.size, 1)
+
+def vec_to_mat(a, r, c):
+    """
+    Convert vector to matrix (column-wise)
+
+    Examples
+    --------
+    amat = vec_to_mat(a, r, c)
+    """
+    return np.reshape(a, (c, r)).T
+
 if __name__ == '__main__':
     """
     execfile('dl_module.py')
@@ -385,19 +592,20 @@ if __name__ == '__main__':
     print 60 * '-'
     print "(1) Load MNIST data only (0, 1, ..., 9)."
     print "(2) Run logistic regression on binary data (0, 1)."
+    print "(3) Run softmax regression on all classes (1, ..., 10)."
     print 60 * '-'
 
     invalid_input = True
     while invalid_input:
         try:
-            user_in = int(raw_input("Make selection (1)-(2): "))
+            user_in = int(raw_input("Make selection (1)-(3): "))
             invalid_input = False
         except ValueError as e:
             print "%s is not a valid selection. Please try again. "\
             %e.args[0].split(':')[1]
 
     if user_in == 1:
-        print "(1) Loading MNIST data..."\
+        print "\n(1) Loading MNIST data..."\
         # Select only 0s and 1s
         binary = 0
         # Shuffle data
@@ -431,7 +639,7 @@ if __name__ == '__main__':
             assert testX[2114,:].sum() == 2.0797377929497003, \
             "All samples: check test input."
     elif user_in == 2:
-        print "(2) Running logistic regression on binary data (0, 1)...\n"
+        print "\n(2) Running logistic regression on binary data (0, 1) ..."
         binary = 1
         shuffle_flag = True
         visual_flag = False
@@ -439,16 +647,55 @@ if __name__ == '__main__':
 
         theta0 = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, 1)).flatten()
         
-        print "Checking gradient for theta0, a vector of length %d ..." \
+        print "Logistic regression: Checking gradient for theta0 (vector of length %d) ..." \
                 % theta0.shape[0]
         check_gradient = check_grad(logistic_regression_vec_fun, \
                                     logistic_regression_vec_gradient, \
                                     theta0, trainX, trainY)
-        print "Grad Check (should be small) : %3.6f" % check_gradient
-        print "Proceeding to optimization ...\n"
+        print "Difference (2-Norm) between closed form and approximation: %3.6f" \
+                % check_gradient 
+        print "\nOptimizing ...\n"
         tstart = time()
         # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
         res = minimize(logistic_regression_vec, theta0, args = (trainX, trainY), \
+                        method='cg', jac = True, options={'disp': True})
+        
+        print "Optimization successful? %s"%res.success
+        print "Optimization status: %d"%res.status
+        theta = res.x
+        fvalopt = res.fun
+        gradopt = res.jac
+        accuracy_train = get_binary_accuracy(theta, trainX, trainY)
+        accuracy_test = get_binary_accuracy(theta, testX, testY)
+        
+        print "Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
+        print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
+        print "Elapsed time: %3.1f Seconds"%(time()-tstart)
+    elif user_in == 3:
+        print "\n(3) Running softmax regression on all classes (1, ..., 10) ..."
+        binary = 0
+        num_classes = 10
+        shuffle_flag = False
+        visual_flag = False
+        trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
+        
+        # theta is num_samples x num_classes-1  (softmax has one redundant class)
+        theta0_mat = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, num_classes-1))
+#         theta0 = theta0_mat.T.reshape(theta0_mat.size, 1)
+        theta0 = mat_to_vec(theta0_mat)
+        
+        print "Softmax: Checking gradient for theta0 (vector of length %d) ..." \
+                % theta0.shape[0]
+        check_gradient = check_grad(softmax_regression_vec_fun, \
+                                    softmax_regression_vec_gradient, \
+                                    theta0, trainX, trainY)
+        print "Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
+                % check_gradient 
+        
+        print "\nOptimizing ...\n"
+        tstart = time()
+        # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
+        res = minimize(softmax_regression_vec, theta0, args = (trainX, trainY), \
                         method='cg', jac = True, options={'disp': True})
         
         print "Optimization successful? %s"%res.success
