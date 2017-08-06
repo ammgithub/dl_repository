@@ -498,6 +498,8 @@ def softmax_regression_vec_fun(theta, trainX, trainY):
     theta_mat = vec_to_mat(theta, num_attributes, num_classes-1) # 785 x 9
     
     # A is skinny (num_samples x num_classes-1) = (60000, 9)
+    theta_mat.T.shape
+    trainX.shape
     A = np.inner(theta_mat.T, trainX).T
     B = np.exp(A)
     # denom = B.sum(axis=1), replicate column (num_samples x num_classes)
@@ -575,6 +577,28 @@ def vec_to_mat(a, r, c):
     amat = vec_to_mat(a, r, c)
     """
     return np.reshape(a, (c, r)).T
+
+def get_multiclass_accuracy(theta, X, Y):
+    """Compute the accuracy for softmax (multi-class case). 
+    X and Y can be either training data (trainX, trainY) or 
+    test data (testX, testY).  
+    
+    In    : theta, trainX, trainY or theta, testX, testY
+    Out   : accuracy
+
+    Examples
+    --------
+    accuracy = get_multiclass_accuracy(theta, X, Y)
+    """
+    X = np.hstack((np.ones((X.shape[0], 1)), X))
+    num_attributes = X.shape[1] # num_attributes = 785 = 784 + 1
+    # Have added zeros for last class (785 x 10)
+    num_classes = int(theta.size / float(num_attributes)) # theta: (7850, 1)
+    theta_mat = vec_to_mat(theta, num_attributes, num_classes) # 785 x 10
+    t = np.inner(theta_mat.T, X).T  # (60000, 10)
+    label_idx = np.argmax(t, axis=1)
+    return sum(1*(Y == label_idx)) / float(len(Y))
+    
 
 if __name__ == '__main__':
     """
@@ -672,25 +696,28 @@ if __name__ == '__main__':
         print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
         print "Elapsed time: %3.1f Seconds"%(time()-tstart)
     elif user_in == 3:
-        print "\n(3) Running softmax regression on all classes (1, ..., 10) ..."
+        print "\n(3) Running softmax regression on all classes (1,...,10) ..."
         binary = 0
         num_classes = 10
         shuffle_flag = False
         visual_flag = False
         trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
+#         print "WARNING: Only 30000 training samples!!!"
+#         trainX = trainX[:30000, :]
+#         trainY = trainY[:30000]
         
         # theta is num_samples x num_classes-1  (softmax has one redundant class)
         theta0_mat = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, num_classes-1))
 #         theta0 = theta0_mat.T.reshape(theta0_mat.size, 1)
         theta0 = mat_to_vec(theta0_mat)
         
-        print "Softmax: Checking gradient for theta0 (vector of length %d) ..." \
-                % theta0.shape[0]
-        check_gradient = check_grad(softmax_regression_vec_fun, \
-                                    softmax_regression_vec_gradient, \
-                                    theta0, trainX, trainY)
-        print "Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
-                % check_gradient 
+#         print "Softmax: Checking gradient for theta0 (vector of length %d) ..." \
+#                 % theta0.shape[0]
+#         check_gradient = check_grad(softmax_regression_vec_fun, \
+#                                     softmax_regression_vec_gradient, \
+#                                     theta0, trainX, trainY)
+#         print "Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
+#                 % check_gradient 
         
         print "\nOptimizing ...\n"
         tstart = time()
@@ -703,12 +730,15 @@ if __name__ == '__main__':
         theta = res.x
         fvalopt = res.fun
         gradopt = res.jac
-        accuracy_train = get_binary_accuracy(theta, trainX, trainY)
-        accuracy_test = get_binary_accuracy(theta, testX, testY)
         
-        print "Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
-        print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
-        print "Elapsed time: %3.1f Seconds"%(time()-tstart)
+        # expand theta to include the last class.
+        theta = np.hstack((theta, np.zeros(trainX.shape[1]+1))) # (7850, 1)
+        accuracy_train = get_multiclass_accuracy(theta, trainX, trainY)
+        accuracy_test = get_multiclass_accuracy(theta, testX, testY)
+        
+        print "Softmax: Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
+        print "Softmax: Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
+        print "Softmax: Elapsed time: %3.1f Seconds"%(time()-tstart)
     else:
         print "Invalid selection. Program terminating. "
     print "Finished."
