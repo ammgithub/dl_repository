@@ -368,7 +368,7 @@ def logistic_regression_vec_gradient(theta, trainX, trainY):
     grad_only = np.dot(trainX.T, error).flatten()
     return grad_only
 
-def softmax_regression(theta, trainX, trainY):
+def softmax_regression(theta, trainX, trainY, weight_decay=False):
     """Compute softmax regression function values. Similar to 
     logistic regression a column of ones is added to account for bias. 
     
@@ -427,7 +427,7 @@ def softmax_regression(theta, trainX, trainY):
                 np.exp(np.inner(theta_mat[:, j], trainX[i, :])) / denom
             p = np.exp(np.inner(theta_mat[:, j], trainX[i, :])) / denom
             fval -= ( 1*(trainY[i]==j) * np.log(p) )
-    grad_mat = np.dot(trainX.T, error)
+    grad_mat = -np.dot(trainX.T, error)
     # Negative gradient for a minimization, must be flattened for np.minimize
     grad = mat_to_vec(grad_mat).flatten()
 #     grad = np.dot(trainX.T, error).flatten()
@@ -736,6 +736,7 @@ if __name__ == '__main__':
         
         print "\nOptimizing ...\n"
         tstart = time()
+        # softmax_regression_vec: ~35 seconds,  softmax_regression: ~1500 seconds
         res = minimize(softmax_regression_vec, theta0, args = (trainX, trainY,weight_decay), \
                         method='cg', jac = True, options={'disp': True})
         
