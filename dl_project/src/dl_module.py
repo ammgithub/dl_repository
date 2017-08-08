@@ -433,7 +433,7 @@ def softmax_regression(theta, trainX, trainY):
 #     grad = np.dot(trainX.T, error).flatten()
     return fval, grad
 
-def softmax_regression_vec(theta, trainX, trainY):
+def softmax_regression_vec(theta, trainX, trainY, weight_decay=False):
     """Compute softmax regression function values. 
     Same as softmax_regression, but vectorized.  
     
@@ -448,11 +448,13 @@ def softmax_regression_vec(theta, trainX, trainY):
     """
     # Add column of ones for bias, trainX is skinny
     trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
-#     num_samples = trainX.shape[0] # samples = 60000
+    num_samples = trainX.shape[0] # samples = 60000
     num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
     num_classes = int(theta.size / float(num_attributes) + 1); # 10
     # theta_mat is skinny
     theta_mat = vec_to_mat(theta, num_attributes, num_classes-1) # 785 x 9
+    
+    if weight_decay: mylambda = 2.0 # 1.0
     
     # A is skinny (num_samples x num_classes-1) = (60000, 9)
     A = np.inner(theta_mat.T, trainX).T
@@ -461,7 +463,7 @@ def softmax_regression_vec(theta, trainX, trainY):
     denom = np.array([list(B.sum(axis=1)),]*(num_classes-1)).transpose()
     # probabilities (num_samples x num_classes-1)
     P = B / denom
-
+    
     # 0-1 array num_samples x num_classes-1
     mask = np.zeros((trainY.shape[0], num_classes-1))
     for j in range(num_classes-1):
@@ -469,11 +471,23 @@ def softmax_regression_vec(theta, trainX, trainY):
         
     # Objective function 
     sum_over_classes = (mask * np.log(P)).sum(axis=1) # (num_samples x 1) flattened
-    fval = -sum_over_classes.sum(axis=0) # sum over all samples m
+    if weight_decay:
+        # weight decay
+        fval = -sum_over_classes.sum(axis=0) / float(num_samples) + \
+                0.5*mylambda*(theta_mat*theta_mat).sum(axis=1).sum(axis=0)
+    else: 
+        # sum over all samples m
+        fval = -sum_over_classes.sum(axis=0) / float(num_samples) 
     
     # Gradient
     error = mask - P
-    grad_mat = np.dot(trainX.T, error)
+    if weight_decay:
+        # weight decay
+        grad_mat = -np.dot(trainX.T, error) / float(num_samples) + \
+                    mylambda*theta_mat
+    else:
+        grad_mat = -np.dot(trainX.T, error) / float(num_samples)
+        
     # Negative gradient for a minimization, must be flattened for np.minimize
     grad = mat_to_vec(grad_mat).flatten()
     return fval, grad
@@ -492,6 +506,7 @@ def softmax_regression_vec_fun(theta, trainX, trainY):
     """
     # Add column of ones for bias, trainX is skinny
     trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
+    num_samples = trainX.shape[0] # samples = 60000
     num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
     num_classes = int(theta.size / float(num_attributes) + 1); # 10
     # theta_mat is skinny
@@ -514,7 +529,7 @@ def softmax_regression_vec_fun(theta, trainX, trainY):
         
     # Objective function 
     sum_over_classes = (mask * np.log(P)).sum(axis=1) # (num_samples x 1) flattened
-    fval = -sum_over_classes.sum(axis=0) # sum over all samples m
+    fval = -sum_over_classes.sum(axis=0) / float(num_samples) # sum over all samples m
     
     return fval
 
@@ -532,7 +547,7 @@ def softmax_regression_vec_gradient(theta, trainX, trainY):
     """
     # Add column of ones for bias, trainX is skinny
     trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
-#     num_samples = trainX.shape[0] # samples = 60000
+    num_samples = trainX.shape[0] # samples = 60000
     num_attributes = trainX.shape[1] # num_attributes = 785 = 784 + 1
     num_classes = int(theta.size / float(num_attributes) + 1); # 10
     # theta_mat is skinny
@@ -553,7 +568,7 @@ def softmax_regression_vec_gradient(theta, trainX, trainY):
         
     # Gradient
     error = mask - P
-    grad_mat = np.dot(trainX.T, error)
+    grad_mat = -np.dot(trainX.T, error) / float(num_samples)
     # Negative gradient for a minimization, must be flattened for np.minimize
     grad = mat_to_vec(grad_mat).flatten()
     return grad
@@ -605,8 +620,7 @@ if __name__ == '__main__':
     execfile('dl_module.py')
     show_options('minimize', 'SLSQP', True)
     """
-    import os
-    os.chdir('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src')
+    import os; os.chdir('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src')
     # Avoid Memory error
     if globals().has_key('trainX'): del trainX, testX, trainY, testY
     
@@ -702,27 +716,27 @@ if __name__ == '__main__':
         shuffle_flag = False
         visual_flag = False
         trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
-#         print "WARNING: Only 30000 training samples!!!"
-#         trainX = trainX[:30000, :]
-#         trainY = trainY[:30000]
-        
+        weight_decay=False
+        if weight_decay: 
+            print "Weight decay is on."
+
         # theta is num_samples x num_classes-1  (softmax has one redundant class)
         theta0_mat = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, num_classes-1))
 #         theta0 = theta0_mat.T.reshape(theta0_mat.size, 1)
         theta0 = mat_to_vec(theta0_mat)
         
+        # results in memory error even for reduced sample sizes
 #         print "Softmax: Checking gradient for theta0 (vector of length %d) ..." \
 #                 % theta0.shape[0]
 #         check_gradient = check_grad(softmax_regression_vec_fun, \
 #                                     softmax_regression_vec_gradient, \
 #                                     theta0, trainX, trainY)
 #         print "Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
-#                 % check_gradient 
+#                 % check_gradient
         
         print "\nOptimizing ...\n"
         tstart = time()
-        # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
-        res = minimize(softmax_regression_vec, theta0, args = (trainX, trainY), \
+        res = minimize(softmax_regression_vec, theta0, args = (trainX, trainY,weight_decay), \
                         method='cg', jac = True, options={'disp': True})
         
         print "Optimization successful? %s"%res.success
