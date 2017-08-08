@@ -700,6 +700,7 @@ if __name__ == '__main__':
         
         print "Optimization successful? %s"%res.success
         print "Optimization status: %d"%res.status
+        print "Optimization message: %s"%res.message
         theta = res.x
         fvalopt = res.fun
         gradopt = res.jac
@@ -742,6 +743,7 @@ if __name__ == '__main__':
         
         print "Optimization successful? %s"%res.success
         print "Optimization status: %d"%res.status
+        print "Optimization message: %s"%res.message
         theta = res.x
         fvalopt = res.fun
         gradopt = res.jac
