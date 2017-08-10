@@ -282,6 +282,7 @@ def logistic_regression(theta, trainX, trainY):
 def logistic_regression_vec(theta, trainX, trainY):
     """Compute logistic regression function values and gradient. 
     Same as logistic_regression, but vectorized.  
+    This function is significantly faster, 35 seconds vs 7 seconds.  
     
     Parameters
     ----------
@@ -436,6 +437,7 @@ def softmax_regression(theta, trainX, trainY, weight_decay=False):
 def softmax_regression_vec(theta, trainX, trainY, weight_decay=False):
     """Compute softmax regression function values. 
     Same as softmax_regression, but vectorized.  
+    This function is significantly faster, 1500 seconds vs 35 seconds.  
     
     Parameters
     ----------
@@ -723,7 +725,6 @@ if __name__ == '__main__':
 
         # theta is num_samples x num_classes-1  (softmax has one redundant class)
         theta0_mat = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, num_classes-1))
-#         theta0 = theta0_mat.T.reshape(theta0_mat.size, 1)
         theta0 = mat_to_vec(theta0_mat)
         
         # results in memory error even for reduced sample sizes
