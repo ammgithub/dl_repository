@@ -1,6 +1,6 @@
 """
 Created on March 31, 2017
-Pycharm
+Pycharm 2
 """
 __author__ = 'amm'
 __date__  = "March 31, 2017"
@@ -438,7 +438,7 @@ def softmax_regression_vec(theta, trainX, trainY, weight_decay=False):
     """Compute softmax regression function values. 
     Same as softmax_regression, but vectorized.  
     This function is significantly faster, 1500 seconds vs 35 seconds.  
-    
+
     Parameters
     ----------
     In    : theta (concatenated to vector for 9 classes), trainX, trainY
@@ -596,16 +596,16 @@ def vec_to_mat(a, r, c):
     return np.reshape(a, (c, r)).T
 
 def get_multiclass_accuracy(theta, X, Y):
-    """Compute the accuracy for softmax (multi-class case). 
-    X and Y can be either training data (trainX, trainY) or 
-    test data (testX, testY).  
-    
-    In    : theta, trainX, trainY or theta, testX, testY
-    Out   : accuracy
+    """compute the accuracy for softmax (multi-class case).
+    x and y can be either training data (trainx, trainy) or
+    test data (testx, testy).
 
-    Examples
+    in    : theta, trainx, trainy or theta, testx, testy
+    out   : accuracy
+
+    examples
     --------
-    accuracy = get_multiclass_accuracy(theta, X, Y)
+    accuracy = get_multiclass_accuracy(theta, x, y)
     """
     X = np.hstack((np.ones((X.shape[0], 1)), X))
     num_attributes = X.shape[1] # num_attributes = 785 = 784 + 1
