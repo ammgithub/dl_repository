@@ -638,7 +638,6 @@ def get_multiclass_accuracy(theta, X, Y):
 
 if __name__ == '__main__':
     """
-    execfile('dl_module.py')
     show_options('minimize', 'SLSQP', True)
     """
     # Avoid Memory error
