@@ -1,21 +1,20 @@
 """
 Created on March 31, 2017
-Pycharm 2
+Pycharm 3
 """
 __author__ = 'amm'
-__date__  = "March 31, 2017"
+__date__  = "13 June2020"
 __version__ = 0.0
 
 import numpy as np
 from scipy.optimize import minimize, check_grad, show_options
 from struct import unpack
 from array import array
-from time import time
+import time as mytime
 # import warnings
 
 
-np.set_printoptions(linewidth = 100, edgeitems = 'all', suppress = True, 
-                 precision = 4)
+np.set_printoptions(linewidth = 100, edgeitems='all', suppress=True, precision=4)
 
 
 def load_mnist_images(fname):
@@ -86,23 +85,21 @@ def load_mnist_labels(fname):
 
 def load_mnist(binary, shuffle_flag=True, visual_flag=False):
     """Load MNIST data: 
-    Loads MNIST data from directory specified in datapath. The only 
+    Loads MNIST data from directory specified in input_file_path. The only
     preprocessing done at this point is a division by the max value 
     in the trainX and testX, 255. Hence input data is scaled to the
     interval [0, 1]. 
     
     Note: design matrix has dimension (num_samples x num_attributes)
     
-    execfile('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\\src\\dl_module.py')
-    
     Parameters
     ----------
-    binary  :  boolean, decides whehter to load only zeros and ones
-    visual_flag          :  boolean, plots first and last 5 images for training
-                          testing
-    shuffle_flag       :  boolean, decides whehter to shuffle or not (mostly for 
-                          debugging)
-    
+    binary              :  boolean, decides whehter to load only zeros and ones
+    visual_flag         :  boolean, plots first and last 5 images for training
+                           testing
+    shuffle_flag        :  boolean, decides whehter to shuffle or not (mostly for
+                           debugging)
+
     Examples
     --------
     trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
@@ -112,15 +109,15 @@ def load_mnist(binary, shuffle_flag=True, visual_flag=False):
     trainX, testX, trainY, testY = load_mnist(1)
     trainX, testX, trainY, testY = load_mnist(0)
     """
-    datapath = 'C:\\Users\\amalysch\\DATA'
+    input_file_path = r'/home/admin_thinkpad/Git/dl_repository/tests/Case01/Inputs//'
     fname_train_images = 'train-images-idx3-ubyte'
     fname_train_labels = 'train-labels-idx1-ubyte'
     fname_test_images = 't10k-images-idx3-ubyte'
     fname_test_labels = 't10k-labels-idx1-ubyte'
-    trainX = load_mnist_images('\\'.join([datapath, fname_train_images]))
-    trainY = load_mnist_labels('\\'.join([datapath, fname_train_labels]))
-    testX = load_mnist_images('\\'.join([datapath, fname_test_images]))
-    testY = load_mnist_labels('\\'.join([datapath, fname_test_labels]))
+    trainX = load_mnist_images(input_file_path + fname_train_images)
+    trainY = load_mnist_labels(input_file_path + fname_train_labels)
+    testX = load_mnist_images(input_file_path + fname_test_images)
+    testY = load_mnist_labels(input_file_path + fname_test_labels)
     
     if binary:
         
@@ -167,22 +164,22 @@ def load_mnist(binary, shuffle_flag=True, visual_flag=False):
         testY = np.array([testY[i] for i in idx])
     
     if visual_flag: 
-        print "\nPrinting FIRST 5 training images."
+        print("\nPrinting FIRST 5 training images.")
         for i in range(5):
-            render = check_output(trainX[i, :]); print render
-            print trainY[i]
-        print "\nPrinting LAST 5 training images."
+            render = check_output(trainX[i, :]); print(render)
+            print(trainY[i])
+        print("\nPrinting LAST 5 training images.")
         for i in range(5):
-            render = check_output(trainX[-(i+1), :]); print render
-            print trainY[-(i+1)]
-        print "\nPrinting FIRST 5 test images."
+            render = check_output(trainX[-(i+1), :]); print(render)
+            print(trainY[-(i+1)])
+        print("\nPrinting FIRST 5 test images.")
         for i in range(5):
-            render = check_output(testX[i, :]); print render
-            print testY[i]
-        print "\nPrinting LAST 5 test images."
+            render = check_output(testX[i, :]); print(render)
+            print(testY[i])
+        print("\nPrinting LAST 5 test images.")
         for i in range(5):
-            render = check_output(testX[-(i+1), :]); print render
-            print testY[-(i+1)]
+            render = check_output(testX[-(i+1), :]); print(render)
+            print(testY[-(i+1)])
     
     # Standardize training set: mean = 0, sample_std = 1
     m = trainX.mean(axis=0, keepdims=1) # Design matrix transposed, axis=0 not axis=1
@@ -216,9 +213,9 @@ def check_output(single_image):
     Examples
     --------
     render = check_output(single_image)
-    render = check_output(trX[0, :]); print render
+    render = check_output(trX[0, :]); print(render)
     for i in range(20):
-        render = check_output(trX[i, :]); print render
+        render = check_output(trX[i, :]); print(render)
     """
     num_rows = 28
     num_cols = 28
@@ -639,30 +636,29 @@ if __name__ == '__main__':
     execfile('dl_module.py')
     show_options('minimize', 'SLSQP', True)
     """
-    import os; os.chdir('C:\\Users\\amalysch\\git\\dl_repository\\dl_project\src')
     # Avoid Memory error
-    if globals().has_key('trainX'): del trainX, testX, trainY, testY
+    # if trainX in globals():
+    #     del trainX, testX, trainY, testY
     
-    print "\n"
-    print 60 * '-'
-    print 18 * ' ' + " Deep Learning Exercises "
-    print 60 * '-'
-    print "(1) Load MNIST data only (0, 1, ..., 9)."
-    print "(2) Run logistic regression on binary data (0, 1)."
-    print "(3) Run softmax regression on all classes (1, ..., 10)."
-    print 60 * '-'
+    print("\n")
+    print(60 * '-')
+    print(18 * ' ' + " Deep Learning Exercises ")
+    print(60 * '-')
+    print("(1) Load MNIST data only (0, 1, ..., 9).")
+    print("(2) Run logistic regression on binary data (0, 1).")
+    print("(3) Run softmax regression on all classes (1, ..., 10).")
+    print(60 * '-')
 
     invalid_input = True
     while invalid_input:
         try:
-            user_in = int(raw_input("Make selection (1)-(3): "))
+            user_in = int(input("Make selection (1)-(3): "))
             invalid_input = False
         except ValueError as e:
-            print "%s is not a valid selection. Please try again. "\
-            %e.args[0].split(':')[1]
+            print("%s is not a valid selection. Please try again. " % e.args[0].split(':')[1])
 
     if user_in == 1:
-        print "\n(1) Loading MNIST data..."\
+        print("\n(1) Loading MNIST data...")
         # Select only 0s and 1s
         binary = 0
         # Shuffle data
@@ -696,7 +692,7 @@ if __name__ == '__main__':
             assert testX[2114,:].sum() == 2.0797377929497003, \
                 "All samples: check test input."
     elif user_in == 2:
-        print "\n(2) Running logistic regression on binary data (0, 1) ..."
+        print("\n(2) Running logistic regression on binary data (0, 1) ...")
         binary = 1
         shuffle_flag = True
         visual_flag = False
@@ -704,64 +700,64 @@ if __name__ == '__main__':
 
         theta0 = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, 1)).flatten()
         
-        print "Logistic regression: Checking gradient for theta0 (vector of length %d) ..." \
-            % theta0.shape[0]
+        print("Logistic regression: Checking gradient for theta0 (vector of length %d) ..."
+              % theta0.shape[0])
         check_gradient = check_grad(logistic_regression_vec_fun,
                                     logistic_regression_vec_gradient,
                                     theta0, trainX, trainY)
-        print "Difference (2-Norm) between closed form and approximation: %3.6f" \
-            % check_gradient
-        print "\nOptimizing ...\n"
-        tstart = time()
+        print("Difference (2-Norm) between closed form and approximation: %3.6f"
+              % check_gradient)
+        print("\nOptimizing ...\n")
+        tstart = mytime.time()
         # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
-        res = minimize(logistic_regression_vec, theta0, args = (trainX, trainY), \
-                        method='cg', jac = True, options={'disp': True})
+        res = minimize(logistic_regression_vec, theta0, args=(trainX, trainY),
+                       method='cg', jac=True, options={'disp': True})
         
-        print "Optimization successful? %s" % res.success
-        print "Optimization status: %d" % res.status
-        print "Optimization message: %s" % res.message
+        print("Optimization successful? %s" % res.success)
+        print("Optimization status: %d" % res.status)
+        print("Optimization message: %s" % res.message)
         theta = res.x
         fvalopt = res.fun
         gradopt = res.jac
         accuracy_train = get_binary_accuracy(theta, trainX, trainY)
         accuracy_test = get_binary_accuracy(theta, testX, testY)
         
-        print "Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
-        print "Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
-        print "Elapsed time: %3.1f Seconds"%(time()-tstart)
+        print("Accuracy for the training set: {:.1f}%".format(100*accuracy_train))
+        print("Accuracy for the test set: {:.1f}%".format(100*accuracy_test))
+        print("Elapsed time: %3.1f Seconds"% (mytime.time()-tstart))
     elif user_in == 3:
-        print "\n(3) Running softmax regression on all classes (1,...,10) ..."
+        print("\n(3) Running softmax regression on all classes (1,...,10) ...")
         binary = 0
         num_classes = 10
         shuffle_flag = False
         visual_flag = False
         trainX, testX, trainY, testY = load_mnist(binary, shuffle_flag, visual_flag)
-        weight_decay=False
+        weight_decay = False
         if weight_decay: 
-            print "Weight decay is on."
+            print("Weight decay is on.")
 
         # theta is num_samples x num_classes-1  (softmax has one redundant class)
         theta0_mat = 0.001*np.random.uniform(0, 1, (trainX.shape[1]+1, num_classes-1))
         theta0 = mat_to_vec(theta0_mat)
         
         # results in memory error even for reduced sample sizes
-#         print "Softmax: Checking gradient for theta0 (vector of length %d) ..." \
-#                 % theta0.shape[0]
+#         print("Softmax: Checking gradient for theta0 (vector of length %d) ..." \
+#                 % theta0.shape[0])
 #         check_gradient = check_grad(softmax_regression_vec_fun, \
 #                                     softmax_regression_vec_gradient, \
 #                                     theta0, trainX, trainY)
-#         print "Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
-#                 % check_gradient
+#         print("Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
+#                 % check_gradient)
         
-        print "\nOptimizing ...\n"
-        tstart = time()
+        print("\nOptimizing ...\n")
+        tstart = mytime.time()
         # softmax_regression_vec: ~35 seconds,  softmax_regression: ~1500 seconds
         res = minimize(softmax_regression_vec, theta0, args = (trainX, trainY,weight_decay), \
                         method='cg', jac = True, options={'disp': True})
         
-        print "Optimization successful? %s"%res.success
-        print "Optimization status: %d"%res.status
-        print "Optimization message: %s"%res.message
+        print("Optimization successful? %s"%res.success)
+        print("Optimization status: %d"%res.status)
+        print("Optimization message: %s"%res.message)
         theta = res.x
         fvalopt = res.fun
         gradopt = res.jac
@@ -771,14 +767,10 @@ if __name__ == '__main__':
         accuracy_train = get_multiclass_accuracy(theta, trainX, trainY)
         accuracy_test = get_multiclass_accuracy(theta, testX, testY)
         
-        print "Softmax: Accuracy for the training set: {:.1f}%".format(100*accuracy_train)
-        print "Softmax: Accuracy for the test set: {:.1f}%".format(100*accuracy_test)
-        print "Softmax: Elapsed time: %3.1f Seconds"%(time()-tstart)
+        print("Softmax: Accuracy for the training set: {:.1f}%".format(100*accuracy_train))
+        print("Softmax: Accuracy for the test set: {:.1f}%".format(100*accuracy_test))
+        print("Softmax: Elapsed time: %3.1f Seconds" % (mytime.time()-tstart))
     else:
-        print "Invalid selection. Program terminating. "
-    print "Finished."
-        
-    
-    
-    
-    
+        print("Invalid selection. Program terminating. ")
+    print("Finished.")
+
