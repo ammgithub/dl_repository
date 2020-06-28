@@ -21,15 +21,15 @@ def main(train_images_fname: str = None,
     theta0 = 0.001 * np.random.uniform(0, 1, (mnist_data.trainX.shape[1] + 1, 1)).flatten()
     # print("Logistic regression: Checking gradient for theta0 (vector of length %d) ..."
     #       % theta0.shape[0])
-    # check_gradient = check_grad(logistic_regression_vec_fun,
-    #                             logistic_regression_vec_gradient,
+    # check_gradient = check_grad(logistic_regression_fun,
+    #                             logistic_regression_gradient,
     #                             theta0, mnist_data.trainX, mnist_data.trainY)
     # print("Difference (2-Norm) between closed form and approximation: %3.6f"
     #       % check_gradient)
 
     print("\nOptimizing ...\n")
     # logistic_regression ~ 35 seconds, logistic_regression_vec ~ 7 seconds
-    res = minimize(logistic_regression_vec, theta0, args=(mnist_data.trainX, mnist_data.trainY),
+    res = minimize(logistic_regression, theta0, args=(mnist_data.trainX, mnist_data.trainY),
                    method='cg', jac=True, options={'disp': True})
 
     print("Optimization successful? %s" % res.success)
@@ -46,14 +46,30 @@ def main(train_images_fname: str = None,
 
     result = 'Done'
     print('\n', result)
-    print("Done with run_handler_logistic_vec", '\n')
+    print("Done with run_handler_logistic", '\n')
     return result
 
 
-def logistic_regression_vec(theta, trainX, trainY):
+def logistic_regression(theta, trainX, trainY):
     """Compute logistic regression function values and gradient.
-    Same as logistic_regression, but vectorized.
-    This function is significantly faster, 35 seconds vs 7 seconds.
+    Column of ones is added to account for bias.
+
+    My data for m = 3 samples and n = 2 attributes:
+
+             | x11 x12 |    | x1 |                      | y1 |
+    trainX = | x21 x22 | =  | x2 |             trainY = | y2 |
+             | x31 x32 |    | x3 |                      | y3 |
+
+                           1
+    h(xi) =  -------------------------------
+             1 + exp(-Theta1*xi1-Theta2*xi2)
+
+           m
+    J = - sum ( yi*log(h(xi)) + (1-yi)*log(1-h(xi)) )
+          i=1
+
+    maximize    sum ( y(i)*log(h) + (1-y(i))*log(1-h) )
+    minimize   -sum ( y(i)*log(h) + (1-y(i))*log(1-h) )
 
     Parameters
     ----------
@@ -62,59 +78,23 @@ def logistic_regression_vec(theta, trainX, trainY):
 
     Examples
     --------
-    fval, grad = logistic_regression_vec(theta, trainX, trainY)
+    fval, grad = logistic_regression(theta, trainX, trainY)
     """
     # Add column of ones for bias
     trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
-    h = sigmoid(np.inner(trainX, theta))
-    # np.log(1-h) can lead to problems for h = 1.0
-    h = np.where(h == 1.0, 1 - 1e-12, h)
-    fval = -(trainY * np.log(h) + (1 - trainY) * np.log(1 - h)).sum()
-    error = h - trainY
+    num_samples = trainX.shape[0]  # samples=12665
+    # Initialize
+    fval = 0.0
+    error = np.zeros((num_samples, 1))
+    for i in range(num_samples):
+        h = sigmoid(np.inner(theta, trainX[i, :]))
+        # np.log(1-h) can lead to problems for h = 1.0
+        h = np.where(h == 1.0, 1 - 1e-12, h)
+        fval -= (trainY[i] * np.log(h) + (1 - trainY[i]) * np.log(1 - h))
+        error[i] = h - trainY[i]
     # Negative gradient for a minimization, must be flattened for np.minimize
     grad = np.dot(trainX.T, error).flatten()
     return fval, grad
-
-
-def logistic_regression_vec_fun(theta, trainX, trainY):
-    """For gradient check: compute logistic regression function values ONLY.
-    For more information see 'logistic_regression_vec'.
-
-    Parameters
-    ----------
-    In    : theta, trainX, trainY
-    Out   : fval_only
-
-    Examples
-    --------
-    fval_only = logistic_regression_vec(theta, trainX, trainY)
-    """
-    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
-    h = sigmoid(np.inner(trainX, theta))
-    h = np.where(h == 1.0, 1 - 1e-12, h)
-    fval_only = -(trainY * np.log(h) + (1 - trainY) * np.log(1 - h)).sum()
-    return fval_only
-
-
-def logistic_regression_vec_gradient(theta, trainX, trainY):
-    """For gradient check: compute logistic regression gradient ONLY.
-    For more information see 'logistic_regression_vec'.
-
-    Parameters
-    ----------
-    In    : theta, trainX, trainY
-    Out   : grad_only
-
-    Examples
-    --------
-    grad_only = logistic_regression_vec_gradient(theta, trainX, trainY)
-    """
-    trainX = np.hstack((np.ones((trainX.shape[0], 1)), trainX))
-    h = sigmoid(np.inner(trainX, theta))
-    h = np.where(h == 1.0, 1 - 1e-12, h)
-    error = h - trainY
-    grad_only = np.dot(trainX.T, error).flatten()
-    return grad_only
 
 
 def get_binary_accuracy(theta, X, Y):
