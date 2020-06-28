@@ -1,6 +1,6 @@
 from .mnist.mnist import MNIST
 import numpy as np
-from scipy.optimize import minimize, check_grad
+from scipy.optimize import minimize
 
 
 def main(train_images_fname: str = None,
@@ -8,7 +8,6 @@ def main(train_images_fname: str = None,
          test_images_fname: str = None,
          test_labels_fname: str = None) -> str:
 
-    data_list = []
     if train_images_fname is not None:
         mnist_data = MNIST(tr_images_fname=train_images_fname,
                            tr_labels_fname=train_labels_fname,
@@ -17,6 +16,8 @@ def main(train_images_fname: str = None,
                            two_class_flag=False,
                            visual_flag=False,
                            shuffle_flag=False)
+
+    print("\nRunning vectorised softmax regression on all classes (1,...,10) ...")
     num_classes = 10
     weight_decay = False
     if weight_decay:
@@ -35,7 +36,6 @@ def main(train_images_fname: str = None,
     #         print("Softmax: Difference (2-Norm) between closed form and approximation: %3.6f" \
     #                 % check_gradient)
 
-    print("\nRunning vectorised softmax regression on all classes (1,...,10) ...")
     print("\nOptimizing ...\n")
     # softmax_regression_vec: ~35 seconds,  softmax_regression: ~1500 seconds
     res = minimize(softmax_regression_vec, theta0, args=(mnist_data.trainX, mnist_data.trainY, weight_decay),
