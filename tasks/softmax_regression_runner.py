@@ -7,7 +7,7 @@ import time as mytime
 start_time = mytime.time()
 input_file_path = r'/home/admin_thinkpad/Git/dl_repository/tests/Case01/Inputs//'
 
-vec_flag = False
+vec_flag = True
 if vec_flag:
     result = run_handler_softmax_vec.main(train_images_fname=input_file_path + 'train-images-idx3-ubyte',
                                           train_labels_fname=input_file_path + 'train-labels-idx1-ubyte',
