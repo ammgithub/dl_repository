@@ -78,6 +78,14 @@ class MNIST(object):
             testX = np.array([testX[i, :] for i in idx])
             testY = np.array([testY[i] for i in idx])
 
+        #########################################################
+        # visual_flag prints a visual render for:
+        # the FIRST 5 training images.
+        # the LAST 5 training images.
+        # the FIRST 5 test images.
+        # the LAST 5 test images.
+        #########################################################
+
         if visual_flag:
             print("\nPrinting FIRST 5 training images.")
             for i in range(5):
@@ -111,6 +119,27 @@ class MNIST(object):
         tstX = testX - m
         del testX
         testX = np.divide(tstX, s + 0.1)
+
+        # Test first and last sample, if no shuffling is done.
+        if not shuffle_flag and two_class_flag:
+            assert trainX[0, :].sum() == 39.561047980868921, \
+                "Zeros and ones only: check training input."
+            assert trainX[12664, :].sum() == -120.36191028696315, \
+                "Zeros and ones only: check training input."
+            assert testX[0, :].sum() == 88.945449293439594, \
+                "Zeros and ones only: check test input."
+            assert testX[2114, :].sum() == -66.791473643172466, \
+                "Zeros and ones only: check test input."
+        elif not shuffle_flag and not two_class_flag:
+            assert trainX[0, :].sum() == 19.28293399623935, \
+                "All samples: check training input."
+            assert trainX[12664, :].sum() == -144.33543748893206, \
+                "All samples: check training input."
+            assert testX[0, :].sum() == -60.315061997267819, \
+                "All samples: check test input."
+            assert testX[2114, :].sum() == 2.0797377929497003, \
+                "All samples: check test input."
+
         self.trainX = trainX
         self.testX = testX
         self.trainY = trainY
